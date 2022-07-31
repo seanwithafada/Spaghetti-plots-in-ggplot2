@@ -1,0 +1,80 @@
+###################################################### Spaghetti plots in ggplot2
+########################### Dataframe
+ID<-c()
+for (i in 1:20) {
+  ID[i]<-ifelse(i<10,paste0("ID-0",i),
+                   paste0("ID-",i))
+}
+set.seed(123)
+T1<-c(sample(1:20,19,replace=T),40) # 19 measurements between 1-20, followed with one outlier.
+T2<-c(sample(11:40,20,replace=T)) # 20 measurements between 11-40.
+T3<-c(11,sample(31:60,19,replace=T)) # 19 measurements between 31-60, along with one outlier.
+Factor<-c(rep(c("Low","High"),by=10))
+df<-data.frame(ID,Factor, T1, T2, T3)
+View(df)
+
+df$Factor<-ordered(df$Factor,levels=c("Low","High"))
+
+library(tidyr)
+DF<-gather(df,Time, Measure,3:5)
+View(DF)
+
+DF$Time[DF$Time=="T1"]<-"Time 01"
+DF$Time[DF$Time=="T2"]<-"Time 02"
+DF$Time[DF$Time=="T3"]<-"Time 03"
+
+DF$Time<-as.factor(DF$Time)
+
+########################### Default
+library(ggplot2)
+windows(20,10)
+(ggplot(DF,aes(x=Time, y=Measure,group=ID,color=ID))+geom_line(size=0.75)+
+    facet_grid(~Factor)+theme_bw())
+(p1<-ggplot(DF,aes(x=Time, y=Measure,group=ID,color=ID))+
+    geom_line(size=0.75)+geom_point(size=2)+facet_grid(~Factor)+theme_bw())
+
+########################### Labeling and scaling axes
+windows(20,10)
+(p2<-p1+labs(x = "", y = "Measure (unit)",color="Participant\nID")+
+  coord_cartesian(ylim=c(0,60))+scale_y_continuous(breaks=seq(0,60,5))+
+  theme(text = element_text(size=15)))
+
+########################### Formatting ID
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
+}
+
+DF$Case<-substrRight(DF$ID, 2)
+View(DF)
+windows(20,10)
+(p3<-ggplot(DF,aes(x=Time, y=Measure,group=Case,color=Case))+
+    geom_line(size=0.75)+geom_point(size=2)+
+    facet_grid(~Factor)+theme_bw()+
+    labs(x = "", y = "Measure (unit)",color="Participant\nID")+
+    coord_cartesian(ylim=c(0,60))+scale_y_continuous(breaks=seq(0,60,5))+
+    theme(text = element_text(size=15)))
+
+
+########################### Another option
+library(dplyr)
+DF_L<-filter(DF,Factor=="Low")
+
+windows(20,10)
+(p4<-ggplot(DF_L,aes(x=Time, y=Measure,group=Case,color=Case))+
+    geom_line(size=0.75)+geom_point(size=2)+theme_bw()+
+    labs(x = "", y = "Measure (unit)",color="Participant\nID",title="Low")+
+    coord_cartesian(ylim=c(0,60))+scale_y_continuous(breaks=seq(0,60,5))+
+    theme(text = element_text(size=15)))
+
+DF_H<-filter(DF,Factor=="High")
+
+windows(20,10)
+(p5<-ggplot(DF_H,aes(x=Time, y=Measure,group=Case,color=Case))+
+    geom_line(size=0.75)+geom_point(size=2)+theme_bw()+
+    labs(x = "", y = "Measure (unit)",color="Participant\nID",title="High")+
+    coord_cartesian(ylim=c(0,60))+scale_y_continuous(breaks=seq(0,60,5))+
+    theme(text = element_text(size=15)))
+
+library(gridExtra)
+windows(20,10)
+grid.arrange(p4,p5,ncol=2)
